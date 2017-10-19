@@ -741,7 +741,7 @@ class Project(object):
 
         return result
 
-    def getProtocolsJson(self, protocols=None, namesOnly=False):
+    def getProtocolsJson(self, protocols=None, namesOnly=False, copySrcDataDir=None):
         """ Create a Json string with the information of the given protocols.
          Params:
             protocols: list of protocols or None to include all.
@@ -759,7 +759,7 @@ class Project(object):
         newDict = OrderedDict()
 
         for prot in protocols:
-            newDict[prot.getObjId()] = prot.getDefinitionDict()
+            newDict[prot.getObjId()] = prot.getDefinitionDict(copySrcDataDir=copySrcDataDir)
 
         g = self.getRunsGraph(refresh=False)
 
@@ -788,7 +788,7 @@ class Project(object):
         return json.dumps(list(newDict.values()),
                           indent=4, separators=(',', ': '))
 
-    def exportProtocols(self, protocols, filename):
+    def exportProtocols(self, protocols, filename, copySrcDataDir=None):
         """ Create a text json file with the info
         to import the workflow into another project.
         This methods is very similar to copyProtocol
@@ -796,17 +796,15 @@ class Project(object):
             protocols: a list of protocols to export.
             filename: the filename where to write the workflow.
         """
-        jsonStr = self.getProtocolsJson(protocols)
+        jsonStr = self.getProtocolsJson(protocols, copySrcDataDir=copySrcDataDir)
         f = open(filename, 'w')
         f.write(jsonStr)
         f.close()
 
-    def loadProtocols(self, filename=None, jsonStr=None):
+    def loadProtocols(self, filename=None):
         """ Load protocols generated in the same format as self.exportProtocols.
         Params:
             filename: the path of the file where to read the workflow.
-            jsonStr: read the protocols from a string instead of file.
-        Note: either filename or jsonStr should be not None.
         """
         f = open(filename)
         protocolsList = json.load(f)
@@ -823,11 +821,14 @@ class Project(object):
             if protClass is None:
                 print "ERROR: protocol class name '%s' not found" % protClassName
             else:
+                protLabel = protDict.get('object.label', None)
+                srcDataDir = protDict.get('sourceDataDir', '')
+                if len(srcDataDir) > 0:
+                    protDict['filesPath'] = os.path.join(os.path.dirname(filename),
+                                                         srcDataDir)
                 prot = self.newProtocol(protClass,
-                                        objLabel=protDict.get('object.label',
-                                                              None),
-                                        objComment=protDict.get(
-                                            'object.comment', None))
+                                        objLabel=protLabel,
+                                        objComment=protDict.get('object.comment', None))
                 newDict[protId] = prot
                 self.saveProtocol(prot)
 

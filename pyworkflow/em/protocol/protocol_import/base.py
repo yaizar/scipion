@@ -29,6 +29,7 @@ from os.path import join
 from glob import glob
 import re
 from datetime import timedelta, datetime
+from collections import OrderedDict
 
 import pyworkflow.utils as pwutils
 import pyworkflow.protocol.params as params
@@ -181,7 +182,7 @@ class ProtImportFiles(ProtImport):
         """
         return '(importFrom == %d)' % self.IMPORT_FROM_FILES
     
-    #--------------------------- UTILS functions -------------------------------
+    # --------------------------- UTILS functions -------------------------------
     def getPattern(self):
         """ Expand the pattern using environ vars or username
         and also replacing special character # by digit matching.
@@ -203,7 +204,7 @@ class ProtImportFiles(ProtImport):
             n = len(g)
             # prepare regex pattern - place ids, handle *, handle ?
             idregex = pattern.replace(g, '(%s)' % ('[0-9]'*n))
-            idregex = idregex.replace('*','.*')
+            idregex = idregex.replace('*', '.*')
             idregex = idregex.replace('?', '.')
             self._idRegex = re.compile(idregex)
             pattern = pattern.replace(g, '[0-9]'*n)
@@ -265,6 +266,33 @@ class ProtImportFiles(ProtImport):
             else:
                 fileId = None
                 
-            yield fileName, fileId            
+            yield fileName, fileId
 
+    def getDefinitionDict(self, copySrcDataDir=None):
+        """ Similar to getObjDict, but only for those
+        params that are in the form.
+        This function is used to export protocols as json text file.
+        """
+        d = OrderedDict()
+        d['object.className'] = self.getClassName()
+        d['object.id'] = self.strId()
+        d['object.label'] = self.getObjLabel()
+        d['object.comment'] = self.getObjComment()
 
+        od = self.getObjDict()
+
+        for attrName in od:
+            if self.getParam(attrName) is not None:
+                d[attrName] = od[attrName]
+
+        if copySrcDataDir is not None:
+            dstDir = os.path.join(copySrcDataDir,
+                                  'source_data',
+                                  '%s.%s' % (d['object.id'], d['object.label']))
+            d['sourceDataDir'] = dstDir
+            pwutils.makePath(dstDir)
+            srcFiles = self.getMatchFiles()
+            for srcFile in srcFiles:
+                copyFile(srcFile, dstDir)
+
+        return d

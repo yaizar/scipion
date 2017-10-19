@@ -1774,26 +1774,64 @@ class ProtocolsView(tk.Frame):
         self._updateSelection()
 
         self.drawRunsGraph()
-
-    def _exportProtocols(self):
-        protocols = self._getSelectedProtocols()
+    # def _exportProtocolsWithDataSource(self):
+    #     protocols = self._getSelectedProtocols()
+    #
+    #     def _export(obj):
+    #         copySrcDataDir = os.path.join(browser.getCurrentDir(),
+    #                                       browser.getEntryValue())
+    #         filename = os.path.join(copySrcDataDir, 'workflow.json')
+    #         try:
+    #             self.project.exportProtocols(protocols, filename,
+    #                                          copySrcDataDir=copySrcDataDir)
+    #             self.windows.showInfo("Workflow successfully saved to '%s' "
+    #                                   % filename)
+    #         except Exception as ex:
+    #             self.windows.showError(str(ex))
+    #
+    #     browser = pwgui.browser.FileBrowserWindow(
+    #         'Choose folder name to export your workflow and its initial data source',
+    #         master=self.windows,
+    #         path=self.project.getPath(''),
+    #         onSelect=_export,
+    #         entryLabel='File', entryValue='workflow')
+    #     browser.show()
+    def _exportProtocols(self, protocols=None, exportSrcData=False):
+        protocols = protocols or self._getSelectedProtocols()
 
         def _export(obj):
-            filename = os.path.join(browser.getCurrentDir(),
-                                    browser.getEntryValue())
+            if exportSrcData:
+                copySrcDataDir = os.path.join(browser.getCurrentDir(),
+                                              browser.getEntryValue())
+                filename = os.path.join(copySrcDataDir, 'workflow.json')
+            else:
+                copySrcDataDir = None
+                filename = os.path.join(browser.getCurrentDir(),
+                                        browser.getEntryValue())
+
             try:
-                self.project.exportProtocols(protocols, filename)
+                self.project.exportProtocols(protocols, filename,
+                                             copySrcDataDir=copySrcDataDir)
                 self.windows.showInfo("Workflow successfully saved to '%s' "
                                       % filename)
             except Exception as ex:
                 self.windows.showError(str(ex))
 
+        if exportSrcData:
+            browserText = 'Choose where to export your workflow and its initial data source'
+            entryLabel = 'Folder'
+            entryValue = 'workflow'
+        else:
+            browserText = 'Choose .json file to save workflow'
+            entryLabel = 'File'
+            entryValue = 'workflow.json'
+
         browser = pwgui.browser.FileBrowserWindow(
-            "Choose .json file to save workflow",
+            browserText,
             master=self.windows,
             path=self.project.getPath(''),
             onSelect=_export,
-            entryLabel='File', entryValue='workflow.json')
+            entryLabel=entryLabel, entryValue=entryValue)
         browser.show()
 
     def _stopProtocol(self, prot):

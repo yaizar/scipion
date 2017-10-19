@@ -46,7 +46,8 @@ from pyworkflow.manager import Manager
 from pyworkflow.config import MenuConfig, ProjectSettings
 from pyworkflow.project import Project
 from pyworkflow.gui import Message, Icon
-from pyworkflow.gui.browser import FileBrowserWindow
+from pyworkflow.gui.browser import FileBrowserWindow, BrowserWindow, ObjectBrowser
+from pyworkflow.gui.tree import TreeProvider
 from pyworkflow.em.plotter import plotFile
 from pyworkflow.gui.plotter import Plotter
 from pyworkflow.gui.text import _open_cmd, openTextFileEditor
@@ -94,7 +95,11 @@ class ProjectWindow(ProjectBaseWindow):
         projMenu.addSubMenu('', '')  # add separator
         projMenu.addSubMenu('Import workflow', 'load_workflow',
                             icon='fa-download.png')
-        projMenu.addSubMenu('Export tree graph', 'export_tree')
+        projMenu.addSubMenu('', '')  # add separator
+        projMenu.addSubMenu('Export workflow and data source', 'export_workflow_with_data',
+                            icon='fa-external-link.png')
+        projMenu.addSubMenu('Export tree graph', 'export_tree',
+                            icon='fa-external-link.png')
         projMenu.addSubMenu('', '')  # add separator
         projMenu.addSubMenu('Notes', 'notes', icon='fa-pencil.png')
         projMenu.addSubMenu('', '')  # add separator
@@ -120,7 +125,7 @@ class ProjectWindow(ProjectBaseWindow):
         self.showGraph = False
         Plotter.setBackend('TkAgg')
         ProjectBaseWindow.__init__(self, projTitle, master,
-                                   icon=self.icon, minsize=(90,50))
+                                   icon=self.icon, minsize=(90, 50))
         self.root.attributes("-zoomed", True)
 
         self.switchView(VIEW_PROTOCOLS)
@@ -227,6 +232,18 @@ class ProjectWindow(ProjectBaseWindow):
                           onSelect=self._loadWorkflow,
                           selectButton='Import'
                           ).show()
+
+    def onImportWorkflowWithDataSource(self):
+        FileBrowserWindow("Select workflow .json file",
+                          self, self.project.getPath(''),
+                          onSelect=self._loadWorkflow,
+                          selectButton='Import'
+                          ).show()
+
+    def onExportWorkflowAndDataSource(self):
+        protocolsView = self.getViewWidget()
+        allProts = [p for p in protocolsView.project.runs]
+        protocolsView._exportProtocols(protocols=allProts, exportSrcData=True)
 
     def onExportTreeGraph(self):
         runsGraph = self.project.getRunsGraph(refresh=True)

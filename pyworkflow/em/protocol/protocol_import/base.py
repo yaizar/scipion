@@ -268,31 +268,31 @@ class ProtImportFiles(ProtImport):
                 
             yield fileName, fileId
 
-    def getDefinitionDict(self, copySrcDataDir=None):
-        """ Similar to getObjDict, but only for those
-        params that are in the form.
-        This function is used to export protocols as json text file.
+    def generateExportData(self, exportDir=None):
+        """ If an export dir is given, will copy the files returned
+        by getMatchFiles() in it. This function is used when exporting
+        workflow with source data for reproducibility purposes.
         """
-        d = OrderedDict()
-        d['object.className'] = self.getClassName()
-        d['object.id'] = self.strId()
-        d['object.label'] = self.getObjLabel()
-        d['object.comment'] = self.getObjComment()
-
-        od = self.getObjDict()
-
-        for attrName in od:
-            if self.getParam(attrName) is not None:
-                d[attrName] = od[attrName]
-
-        if copySrcDataDir is not None:
-            dstDir = os.path.join(copySrcDataDir,
-                                  'source_data',
-                                  '%s.%s' % (d['object.id'], d['object.label']))
-            d['sourceDataDir'] = dstDir
+        exportDict = {}
+        if exportDir is not None:
+            dstDir = os.path.join(exportDir,
+                                  '%s.%s' % (self.strId(), self.getObjLabel()))
+            exportDict['sourceDataDir'] = dstDir
             pwutils.makePath(dstDir)
             srcFiles = self.getMatchFiles()
             for srcFile in srcFiles:
                 copyFile(srcFile, dstDir)
 
-        return d
+        return exportDict
+
+    def processImportDict(self, importDict):
+        """
+        This function is used when we import a workflow from a json.
+        If the dict coming from a json in a import protocol has a
+        'sourceDataDir', we will point the protocol filesPath param to
+        it.
+        """
+        if 'sourceDataDir' in importDict:
+            importDict['filesPath'] = importDict['sourceDataDir']
+
+        return importDict

@@ -1774,28 +1774,7 @@ class ProtocolsView(tk.Frame):
         self._updateSelection()
 
         self.drawRunsGraph()
-    # def _exportProtocolsWithDataSource(self):
-    #     protocols = self._getSelectedProtocols()
-    #
-    #     def _export(obj):
-    #         copySrcDataDir = os.path.join(browser.getCurrentDir(),
-    #                                       browser.getEntryValue())
-    #         filename = os.path.join(copySrcDataDir, 'workflow.json')
-    #         try:
-    #             self.project.exportProtocols(protocols, filename,
-    #                                          copySrcDataDir=copySrcDataDir)
-    #             self.windows.showInfo("Workflow successfully saved to '%s' "
-    #                                   % filename)
-    #         except Exception as ex:
-    #             self.windows.showError(str(ex))
-    #
-    #     browser = pwgui.browser.FileBrowserWindow(
-    #         'Choose folder name to export your workflow and its initial data source',
-    #         master=self.windows,
-    #         path=self.project.getPath(''),
-    #         onSelect=_export,
-    #         entryLabel='File', entryValue='workflow')
-    #     browser.show()
+
     def _exportProtocols(self, protocols=None, exportSrcData=False):
         protocols = protocols or self._getSelectedProtocols()
 
@@ -1803,6 +1782,7 @@ class ProtocolsView(tk.Frame):
             if exportSrcData:
                 copySrcDataDir = os.path.join(browser.getCurrentDir(),
                                               browser.getEntryValue())
+                pwutils.makePath(copySrcDataDir)
                 filename = os.path.join(copySrcDataDir, 'workflow.json')
             else:
                 copySrcDataDir = None

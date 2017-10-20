@@ -224,6 +224,8 @@ class ProjectWindow(ProjectBaseWindow):
             self.project.loadProtocols(obj.getPath())
             self.getViewWidget().updateRunsGraph(True, reorganize=True)
         except Exception, ex:
+            import traceback
+            traceback.print_exc()
             self.showError(str(ex))
             
     def onImportWorkflow(self):

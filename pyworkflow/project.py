@@ -759,7 +759,7 @@ class Project(object):
         newDict = OrderedDict()
 
         for prot in protocols:
-            newDict[prot.getObjId()] = prot.getDefinitionDict(copySrcDataDir=copySrcDataDir)
+            newDict[prot.getObjId()] = prot.getExportDict(exportDir=copySrcDataDir)
 
         g = self.getRunsGraph(refresh=False)
 
@@ -813,7 +813,7 @@ class Project(object):
         newDict = OrderedDict()
 
         # First iteration: create all protocols and setup parameters
-        for protDict in protocolsList:
+        for i, protDict in enumerate(protocolsList):
             protClassName = protDict['object.className']
             protId = protDict['object.id']
             protClass = emProtocols.get(protClassName, None)
@@ -822,13 +822,10 @@ class Project(object):
                 print "ERROR: protocol class name '%s' not found" % protClassName
             else:
                 protLabel = protDict.get('object.label', None)
-                srcDataDir = protDict.get('sourceDataDir', '')
-                if len(srcDataDir) > 0:
-                    protDict['filesPath'] = os.path.join(os.path.dirname(filename),
-                                                         srcDataDir)
                 prot = self.newProtocol(protClass,
                                         objLabel=protLabel,
                                         objComment=protDict.get('object.comment', None))
+                protocolsList[i] = prot.processImportDict(protDict)
                 newDict[protId] = prot
                 self.saveProtocol(prot)
 
@@ -857,10 +854,13 @@ class Project(object):
                         # This case is similar to Pointer, but the values
                         # is a list and we will setup a pointer for each value
                         elif isinstance(attr, pwobj.PointerList):
-                            for value in protDict[paramName]:
-                                p = pwobj.Pointer()
-                                _setPointer(p, value)
-                                attr.append(p)
+                            try:
+                                for value in protDict[paramName]:
+                                    p = pwobj.Pointer()
+                                    _setPointer(p, value)
+                                    attr.append(p)
+                            except Exception as ex:
+                                raise
                         # For "normal" parameters we just set the string value 
                         else:
                             attr.set(protDict[paramName])

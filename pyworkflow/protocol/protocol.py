@@ -519,13 +519,10 @@ class Protocol(Step):
         for paramName, _ in self._definition.iterParams():
             yield paramName, getattr(self, paramName)
             
-    def getDefinitionDict(self, copySrcDataDir=None):
+    def getDefinitionDict(self):
         """ Similar to getObjDict, but only for those 
         params that are in the form.
         This function is used to export protocols as json text file.
-        Params:
-            - copySrcDataDir: path to export the imported files.
-            Used in overwritten function in import protocols.
         """
         d = OrderedDict()
         d['object.className'] = self.getClassName()
@@ -538,8 +535,45 @@ class Protocol(Step):
         for attrName in od:
             if self.getParam(attrName) is not None:
                 d[attrName] = od[attrName]
+
+        if 'inputVolumes' in d:
+            pass
         return d
-        
+
+    def generateExportData(self, exportDir=None):
+        """ Implement in subclasses: function to copy the files
+        necessary to reproduce this protocol run. This function is
+        used when we use the option "Export workflow with source
+        data".
+        Params:
+            - exportDir: place to store protocol files, if needed
+        """
+        return {}
+
+    def getExportDict(self, exportDir=None):
+        """ Returns a dictionary with the protocol's form data.
+        If an exportDir is specified, the dict will also contain
+        whatever data is needed for reproducibility as defined by
+        each protocol in the function generateExportData.
+        Params:
+            - exportDir: path to the folder where reproducibility
+            data will be stored
+        """
+        protDict = self.getDefinitionDict()
+        if exportDir is not None:
+            exportData = self.generateExportData(exportDir=exportDir)
+            protDict.update(exportData)
+        return protDict
+
+    def processImportDict(self, importDict):
+        """
+        This function is used when we import a workflow from a json.
+        If we need to include source data for reproducibility purposes,
+        this function will make the necessary changes in the protocol dict
+        to include the source data.
+        """
+        return importDict
+
     def iterDefinitionSections(self):
         """ Iterate over all the section of the definition. """
         for section in self._definition.iterSections():

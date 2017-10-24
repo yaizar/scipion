@@ -536,19 +536,24 @@ class Protocol(Step):
             if self.getParam(attrName) is not None:
                 d[attrName] = od[attrName]
 
-        if 'inputVolumes' in d:
-            pass
         return d
 
-    def generateExportData(self, exportDir=None):
-        """ Implement in subclasses: function to copy the files
-        necessary to reproduce this protocol run. This function is
-        used when we use the option "Export workflow with source
-        data".
+    def generateExportData(self, protDict, exportDir=None):
+        """ Implement in subclasses: function to perform actions
+        necessary for reproducibility, which can include processing
+        protocol data from protDict or copying protocol files to
+        an exportDir, for example.
+        This function is used when we use the option "Export
+        workflow with source data".
         Params:
-            - exportDir: place to store protocol files, if needed
+            - protDict: protocol dictionary coming from
+                          getDefinitionDict()
+            - exportDir: directory to store protocol files, if needed
+        Returns:
+            - protDict:  dictionary that will finally be exported
+                        to json.
         """
-        return {}
+        return protDict
 
     def getExportDict(self, exportDir=None):
         """ Returns a dictionary with the protocol's form data.
@@ -561,16 +566,19 @@ class Protocol(Step):
         """
         protDict = self.getDefinitionDict()
         if exportDir is not None:
-            exportData = self.generateExportData(exportDir=exportDir)
-            protDict.update(exportData)
+            protDict = self.generateExportData(protDict, exportDir=exportDir)
+
         return protDict
 
-    def processImportDict(self, importDict):
+    def processImportDict(self, importDict, importDir):
         """
         This function is used when we import a workflow from a json.
         If we need to include source data for reproducibility purposes,
         this function will make the necessary changes in the protocol dict
         to include the source data.
+        Params:
+            - importDict: import dictionary coming from the json
+            - importDir: directory containing the json file
         """
         return importDict
 

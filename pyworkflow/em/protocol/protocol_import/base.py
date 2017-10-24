@@ -268,31 +268,43 @@ class ProtImportFiles(ProtImport):
                 
             yield fileName, fileId
 
-    def generateExportData(self, exportDir=None):
-        """ If an export dir is given, will copy the files returned
-        by getMatchFiles() in it. This function is used when exporting
-        workflow with source data for reproducibility purposes.
+    def generateExportData(self, protDict, exportDir=None):
+        """ Copies files as obtained by getMatchFiles() to
+        exportDir and adds the key "sourceDataDir'
+        to protDict to recover them when importing.
+        Params:
+            - protDict: protocol dictionary coming from
+                          getDefinitionDict()
+            - exportDir: directory to store files obtained with
+                         getMatchFiles()
+        Returns:
+            - protDict: dictionary that will finally be exported
+                        to json
         """
-        exportDict = {}
         if exportDir is not None:
-            dstDir = os.path.join(exportDir,
-                                  '%s.%s' % (self.strId(), self.getObjLabel()))
-            exportDict['sourceDataDir'] = dstDir
+            dstFolder = '%s_%s' % (self.strId(),
+                                   self.getObjLabel().replace(' ', ''))
+            dstDir = os.path.join(exportDir, dstFolder)
+            protDict['sourceDataDir'] = dstFolder
             pwutils.makePath(dstDir)
             srcFiles = self.getMatchFiles()
             for srcFile in srcFiles:
                 copyFile(srcFile, dstDir)
 
-        return exportDict
+        return protDict
 
-    def processImportDict(self, importDict):
+    def processImportDict(self, importDict, importDir):
         """
         This function is used when we import a workflow from a json.
-        If the dict coming from a json in a import protocol has a
-        'sourceDataDir', we will point the protocol filesPath param to
-        it.
+        If we need to include source data for reproducibility purposes,
+        this function will make the necessary changes in the protocol dict
+        to include the source data.
+        Params:
+            - importDict: import dictionary coming from the json
+            - importDir: directory containing the json file
         """
         if 'sourceDataDir' in importDict:
-            importDict['filesPath'] = importDict['sourceDataDir']
+            importDict['filesPath'] = os.path.join(importDir,
+                                                   importDict['sourceDataDir'])
 
         return importDict

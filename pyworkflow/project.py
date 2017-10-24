@@ -807,6 +807,7 @@ class Project(object):
             filename: the path of the file where to read the workflow.
         """
         f = open(filename)
+        importDir = os.path.dirname(filename)
         protocolsList = json.load(f)
 
         emProtocols = em.getProtocols()
@@ -825,7 +826,7 @@ class Project(object):
                 prot = self.newProtocol(protClass,
                                         objLabel=protLabel,
                                         objComment=protDict.get('object.comment', None))
-                protocolsList[i] = prot.processImportDict(protDict)
+                protocolsList[i] = prot.processImportDict(protDict, importDir)
                 newDict[protId] = prot
                 self.saveProtocol(prot)
 

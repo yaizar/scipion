@@ -286,6 +286,7 @@ class ProtImportFiles(ProtImport):
                                    self.getObjLabel().replace(' ', ''))
             dstDir = os.path.join(exportDir, dstFolder)
             protDict['sourceDataDir'] = dstFolder
+            protDict['filesPath'] = './%s' % dstFolder
             pwutils.makePath(dstDir)
             srcFiles = self.getMatchFiles()
             for srcFile in srcFiles:
@@ -303,8 +304,9 @@ class ProtImportFiles(ProtImport):
             - importDict: import dictionary coming from the json
             - importDir: directory containing the json file
         """
-        if 'sourceDataDir' in importDict:
-            importDict['filesPath'] = os.path.join(importDir,
-                                                   importDict['sourceDataDir'])
+
+        if importDict['filesPath'].startswith('./'):
+            folder = importDict['filesPath'].split('/', 1)[1]
+            importDict['filesPath'] = os.path.join(importDir, folder)
 
         return importDict

@@ -236,7 +236,7 @@ class ProjectWindow(ProjectBaseWindow):
     def onExportWorkflowAndDataSource(self):
         protocolsView = self.getViewWidget()
         allProts = [p for p in protocolsView.project.runs]
-        protocolsView._exportProtocols(protocols=allProts, exportSrcData=True)
+        protocolsView.exportWorkflowWithSourceData(protocols=allProts)
 
     def onExportTreeGraph(self):
         runsGraph = self.project.getRunsGraph(refresh=True)

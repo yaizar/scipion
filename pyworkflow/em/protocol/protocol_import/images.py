@@ -36,6 +36,7 @@ from pyworkflow.utils.properties import Message
 import pyworkflow.protocol.params as params
 from pyworkflow.em.convert import ImageHandler
 from pyworkflow.em.data import Acquisition
+from shutil import copytree
 
 from base import ProtImportFiles
 
@@ -497,6 +498,51 @@ class ProtImportImages(ProtImportFiles):
     def _createOutputSet(self):
         """ Create the output set that will be populated as more data is
         imported. """
+
+    def generateExportData(self, protDict, exportDir=None):
+        """ Copies files as obtained by getMatchFiles() to
+        exportDir and adds the key "sourceDataDir'
+        to protDict to recover them when importing.
+        Params:
+            - protDict: protocol dictionary coming from
+                          getDefinitionDict()
+            - exportDir: directory to store files obtained with
+                         getMatchFiles()
+        Returns:
+            - protDict: dictionary that will finally be exported
+                        to json
+        """
+        if exportDir is not None:
+            extraFolder = self._getExtraPath('')
+            if not os.path.exists(extraFolder):
+                return protDict
+
+            dstFolder = '%s_%s' % (self.strId(),
+                                   self.getObjLabel().replace(' ', ''))
+            dstDir = os.path.join(exportDir, dstFolder)
+            protDict['sourceDataDir'] = dstFolder
+            protDict['filesPath'] = './%s' % dstFolder
+            copytree(extraFolder, dstDir)
+
+        return protDict
+
+    def processImportDict(self, importDict, importDir):
+        """
+        This function is used when we import a workflow from a json.
+        If we need to include source data for reproducibility purposes,
+        this function will make the necessary changes in the protocol dict
+        to include the source data.
+        Params:
+            - importDict: import dictionary coming from the json
+            - importDir: directory containing the json file
+        """
+
+        if importDict['filesPath'].startswith('./'):
+            folder = importDict['filesPath'].split('/', 1)[1]
+            importDict['filesPath'] = os.path.join(importDir, folder)
+            importDict['filesPattern'] = '*'
+
+        return importDict
 
     # --------------- Streaming special functions -----------------------
     def _getStopStreamingFilename(self):

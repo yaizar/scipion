@@ -41,6 +41,7 @@ import tempfile
 from collections import OrderedDict
 import Tkinter as tk
 import ttk
+import threading
 import datetime as dt
 import pyworkflow.object as pwobj
 import pyworkflow.utils as pwutils
@@ -1775,36 +1776,70 @@ class ProtocolsView(tk.Frame):
 
         self.drawRunsGraph()
 
-    def _exportProtocols(self, protocols=None, exportSrcData=False):
+    def exportWorkflowWithSourceData(self, protocols=None):
         protocols = protocols or self._getSelectedProtocols()
 
-        def _export(obj):
-            if exportSrcData:
+        def _isThreadFinished(thread, copyDir):
+            if thread.isAlive():
+                self.after(5000, _isThreadFinished, thread, copyDir)
+            else:
+                self.windows.showInfo("Workflow successfully saved to '%s' "
+                                      % copyDir)
+                return
+
+        def _exportWorkflow(obj):
+            if self.windows.askYesNo("Copy import files",
+                                     "This action will copy the files resulting "
+                                     "from every import protocol to a new folder in your chosen directory. "
+                                     "An info message will notify you when your export data is ready."
+                                     "Be aware that workflow changes made before this notification will cause"
+                                     "the export to fail. \n"
+                                     "Do you wish to continue?"):
                 copySrcDataDir = os.path.join(browser.getCurrentDir(),
                                               browser.getEntryValue())
                 pwutils.makePath(copySrcDataDir)
                 filename = os.path.join(copySrcDataDir, 'workflow.json')
+                try:
+                    p = threading.Thread(target=self.project.exportProtocols,
+                                         args=(protocols, filename),
+                                         kwargs={'copySrcDataDir': copySrcDataDir})
+                    p.start()
+                    _isThreadFinished(p, copySrcDataDir)
+
+                except Exception as ex:
+                    self.windows.showError(str(ex))
             else:
-                copySrcDataDir = None
-                filename = os.path.join(browser.getCurrentDir(),
-                                        browser.getEntryValue())
+                return
+
+        browserText = 'Choose where to export your workflow and its initial data source'
+        entryLabel = 'Folder'
+        entryValue = 'workflow'
+
+        browser = pwgui.browser.FileBrowserWindow(
+            browserText,
+            master=self.windows,
+            path=self.project.getPath(''),
+            onSelect=_exportWorkflow,
+            entryLabel=entryLabel, entryValue=entryValue)
+        browser.show()
+
+    def _exportProtocols(self, protocols=None):
+        protocols = protocols or self._getSelectedProtocols()
+
+        def _export(obj):
+            filename = os.path.join(browser.getCurrentDir(),
+                                    browser.getEntryValue())
 
             try:
-                self.project.exportProtocols(protocols, filename,
-                                             copySrcDataDir=copySrcDataDir)
+                self.project.exportProtocols(protocols, filename)
                 self.windows.showInfo("Workflow successfully saved to '%s' "
                                       % filename)
             except Exception as ex:
                 self.windows.showError(str(ex))
 
-        if exportSrcData:
-            browserText = 'Choose where to export your workflow and its initial data source'
-            entryLabel = 'Folder'
-            entryValue = 'workflow'
-        else:
-            browserText = 'Choose .json file to save workflow'
-            entryLabel = 'File'
-            entryValue = 'workflow.json'
+        browserText = 'Choose .json file to save workflow'
+        entryLabel = 'File'
+        entryValue = 'workflow.json'
 
         browser = pwgui.browser.FileBrowserWindow(
             browserText,
@@ -1825,7 +1860,7 @@ class ProtocolsView(tk.Frame):
 
         viewers = em.findViewers(prot.getClassName(), DESKTOP_TKINTER)
         if len(viewers):
-            # Instanciate the first available viewer
+            # Instantiate the first available viewer
             # TODO: If there are more than one viewer we should display
             # TODO: a selection menu
             firstViewer = viewers[0](project=self.project, protocol=prot,
@@ -1839,7 +1874,7 @@ class ProtocolsView(tk.Frame):
             for _, output in prot.iterOutputAttributes(em.EMObject):
                 viewers = em.findViewers(output.getClassName(), DESKTOP_TKINTER)
                 if len(viewers):
-                    # Instanciate the first available viewer
+                    # Instantiate the first available viewer
                     # TODO: If there are more than one viewer we should display
                     # TODO: a selection menu
                     viewerclass = viewers[0]

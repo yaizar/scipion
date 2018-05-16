@@ -185,8 +185,9 @@ class ImageHandler(object):
         over the whole stack. If the input format is ".dm4" or  ".img" only is
         allowed the conversion of the whole stack.
         """
-        if (inputFn.lower().endswith('.dm4') or
-            outputFn.lower().endswith('.img')):
+        inputLower = inputFn.lower()
+        outputLower = outputFn.lower()
+        if inputLower.endswith('.dm4') or outputLower.endswith('.img'):
             if (firstImg and lastImg) is None:
                 # FIXME Since now we can not read dm4 format in Scipion natively
                 # or writing recent .img format
@@ -197,6 +198,14 @@ class ImageHandler(object):
                 ext = os.path.splitext(outputFn)[1]
                 raise Exception("if convert from %s, firstImg and lastImg "
                                 "must be None" % ext)
+        # elif inputLower.endswith('.tif'):
+        #     # FIXME: It seems that we have some flip problem with compressed
+        #     # tif files, we need to check that
+        #     if outputLower.endswith('.mrc'):
+        #         self.runJob('tif2mrc', '%s %s' % (inputFn, outputFn))
+        #     else:
+        #         raise Exception("Conversion from tif to %s is not "
+        #                         "implemented yet. " % pwutils.getExt(outputFn))
         else:
             # get input dim
             (x, y, z, n) = xmipp.getImageSize(inputFn)
@@ -377,7 +386,7 @@ class ImageHandler(object):
         """
         self.__runXmippProgram('xmipp_transform_threshold',
                                '-i %s -o %s --select below 0 --substitute '
-                               'value 1' % (inputFile, outputFile))
+                               'value 0' % (inputFile, outputFile))
         
         self.__runXmippProgram('xmipp_transform_threshold',
                                '-i %s --select above 1 --substitute '
@@ -402,6 +411,13 @@ class ImageHandler(object):
 
         return outputFn
 
+    def scaleFourier(self, inputFn, outputFn, scaleFactor):
+        """ Scale an image by cropping in Fourier space. """
+        # TODO: Avoid using xmipp program for this
+        self.__runXmippProgram("xmipp_transform_downsample",
+                               "-i %s -o %s --step %f --method fourier"
+                               % (inputFn, outputFn, scaleFactor))
+
     @staticmethod
     def getThumbnailFn(inputFn):
         """Replace the extension in inputFn with thumb.png"""
@@ -424,6 +440,12 @@ class ImageHandler(object):
         
         return fn
 
+    @classmethod
+    def removeFileType(cls, fileName):
+        # Remove filename format specification such as :mrc, :mrcs or :ems
+        if ':' in fileName:
+            fileName = fileName.split(':')[0]
+        return fileName
 
 DT_FLOAT = ImageHandler.DT_FLOAT
 
@@ -441,9 +463,9 @@ def __downloadPdb(pdbId, pdbGz, log):
         log.info("File to download and unzip: %s" % pdbGz)
     
     pdborgHostname = "ftp.wwpdb.org"
-    pdborgDirectory = "/pub/pdb/data/structures/all/pdb/"
-    prefix = "pdb"
-    suffix = ".ent.gz"
+    pdborgDirectory = "/pub/pdb/data/structures/all/mmCIF/"
+    prefix = ""  # use pdb for PDB and null for mmcif
+    suffix = ".cif.gz"
     success = True
     # Log into serverhttp://www.rcsb.org/pdb/files/2MP1.pdb.gz
     ftp = ftplib.FTP()
@@ -504,3 +526,32 @@ def __unzipPdb(pdbGz, pdbFile, log, cleanFile=True):
         success = False
         
     return success
+
+
+def getSubsetByDefocus(inputCTFs, inputMics, nMics):
+    """ Return a subset of inputMics that covers the whole range of defocus
+    from the inputCtfs set.
+    This function can be used from picking wizards that wants to optimize the
+    parameters for micrographs with different defocus values.
+    Params:
+        nMics is the number of micrographs that will be in the subset.
+    """
+    sortedMicIds = []
+
+    # Sort CTFs by defocus and select only those that match with inputMics
+    for ctf in inputCTFs.iterItems(orderBy='_defocusU'):
+        ctfId = ctf.getObjId()
+        if ctfId in inputMics:
+            sortedMicIds.append(ctfId)
+
+    # Take an equally spaced subset of micrographs
+    space = len(sortedMicIds) / (nMics - 1)
+    micIds = [sortedMicIds[0], sortedMicIds[-1]]
+    pos = 0
+    while len(micIds) < nMics:  # just add first and last
+        pos += space
+        micIds.insert(1, sortedMicIds[pos])
+
+    # Return the list with selected micrographs
+    return [inputMics[micId].clone() for micId in micIds]
+

@@ -2,7 +2,7 @@
 # *
 # * Authors:     J.M. De la Rosa Trevin (jmdelarosa@cnb.csic.es)
 # *              Vahid Abrishami (vabrishami@cnb.csic.es)
-# *              Josue Gomez Blanco (jgomez@cnb.csic.es)
+# *              Josue Gomez Blanco (josue.gomez-blanco@mcgill.ca)
 # *
 # * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
 # *
@@ -28,6 +28,7 @@
 
 import os
 from itertools import izip
+from math import ceil
 
 from pyworkflow.object import Set
 import pyworkflow.utils.path as pwutils
@@ -186,7 +187,12 @@ class ProtAlignMovies(ProtProcessMovies):
 
             for movie in newDone:
                 newMovie = self._createOutputMovie(movie)
-                movieSet.append(newMovie)
+                if newMovie.getAlignment().getShifts()[0]:
+                    movieSet.append(newMovie)
+                else:
+                    print(yellowStr("WARNING: Movie %s has empty alignment data, can't add it to "
+                                    "output set." % movie.getFileName()))
+
 
             self._updateOutputSet('outputMovies', movieSet, streamMode)
 
@@ -526,7 +532,7 @@ class ProtAlignMovies(ProtProcessMovies):
             args += ' --gain ' + gain
 
         if splineOrder is not None:
-            args += '--Bspline %d ' % splineOrder
+            args += ' --Bspline %d ' % splineOrder
 
         self.__runXmippProgram('xmipp_movie_alignment_correlation', args)
 
@@ -586,6 +592,35 @@ class ProtAlignMovies(ProtProcessMovies):
 
         return outputFn
 
+    def correctGain(self, movieFn, outputFn, gainFn=None, darkFn=None):
+        """correct a movie with both gain and dark images"""
+        ih = ImageHandler()
+        _, _, z, n = ih.getDimensions(movieFn)
+        numberOfFrames = max(z, n) # in case of wrong mrc stacks as volumes
+
+        def _readImgFloat(fn):
+            img = None
+            if fn:
+                img = ih.read(fn)
+                img.convert2DataType(ih.DT_FLOAT)
+            return img
+
+        gainImg = _readImgFloat(gainFn)
+        darkImg = _readImgFloat(darkFn)
+
+        img = ih.createImage()
+
+        for i in range(1, numberOfFrames + 1):
+            img.read((i, movieFn))
+            img.convert2DataType(ih.DT_FLOAT)
+
+            if darkImg:
+                img.inplaceSubtract(darkImg)
+            if gainImg:
+                img.inplaceMultiply(gainImg)
+
+            img.write((i, outputFn))
+
     def getThumbnailFn(self, inputFn):
         """ Returns the default name for a thumbnail image"""
         return pwutils.replaceExt(inputFn, "thumb.png")
@@ -593,35 +628,33 @@ class ProtAlignMovies(ProtProcessMovies):
 
 def createAlignmentPlot(meanX, meanY):
     """ Create a plotter with the cumulative shift per frame. """
-    sumMeanX = []
-    sumMeanY = []
     figureSize = (8, 6)
     plotter = Plotter(*figureSize)
     figure = plotter.getFigure()
 
-    preX = 0.0
-    preY = 0.0
-    sumMeanX.append(0.0)
-    sumMeanY.append(0.0)
     ax = figure.add_subplot(111)
     ax.grid()
+    ax.axis('equal')
     ax.set_title('Cartesian representation')
     ax.set_xlabel('Drift x (pixels)')
     ax.set_ylabel('Drift y (pixels)')
-    ax.plot(0, 0, 'yo-')
-    i = 1
+    
+    # Max range of the plot of the two coordinates
+    plotRange = max(max(meanX)-min(meanX), max(meanY)-min(meanY))
+    i = 1 
+    skipLabels = ceil(len(meanX) / 10.0)
     for x, y in izip(meanX, meanY):
-        preX += x
-        preY += y
-        sumMeanX.append(preX)
-        sumMeanY.append(preY)
-        #ax.plot(preX, preY, 'yo-')
-        ax.text(preX-0.02, preY+0.02, str(i))
+        if i % skipLabels == 0:
+            ax.text(x-0.02*plotRange, y+0.02*plotRange, str(i))
         i += 1
 
-    ax.plot(sumMeanX, sumMeanY, color='b')
-    ax.plot(sumMeanX, sumMeanY, 'yo')
+    ax.plot(meanX, meanY, color='b')
+    ax.plot(meanX, meanY, 'yo')
 
+    # setting the plot windows to properly see the data
+    ax.axis([min(meanX)-0.1*plotRange, max(meanX)+0.1*plotRange, 
+             min(meanY)-0.1*plotRange, max(meanY)+0.1*plotRange])
+    
     plotter.tightLayout()
 
     return plotter

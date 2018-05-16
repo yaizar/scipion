@@ -135,6 +135,7 @@ void ProgRecFourierAccel::run()
 
 void ProgRecFourierAccel::createLoadingThread() {
 	barrier_init( &barrier, 2 ); // two barries - for main and loading thread
+	loadThread.buffer1 = loadThread.buffer2 = NULL;
 	loadThread.parent = this;
 	loadThread.selFile = &SF;
 	pthread_create( &loadThread.id , NULL, loadImageThread, (void *)(&loadThread) );
@@ -267,8 +268,7 @@ Array2D<std::complex<float> >* ProgRecFourierAccel::cropAndShift(MultidimArray<s
 				}
 				// do the shift
 				int myPadI = (i < halfY) ?	i + sizeX : i - paddedFourier.ydim + sizeX;
-				(*result)(j, myPadI).real() =	paddedFourierTmp.real();
-				(*result)(j, myPadI).imag() =	paddedFourierTmp.imag();
+				(*result)(j, myPadI) = std::complex<float>(paddedFourierTmp.real(), paddedFourierTmp.imag());
 			}
 		}
 	}

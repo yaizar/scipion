@@ -129,12 +129,14 @@ class Object(object):
         subclasses of Object and will be stored"""
         for key, attr in self.getAttributes():
             if not hasattr(attr, '_objDoStore'):
-                print "Object.getAttributesToStore: attribute '%s' seems to be overwritten," % key
-                print "   since '_objDoStore' was not found. Ignoring attribute. "
+                print ("Object.getAttributesToStore: attribute '%s' seems to "
+                      "be overwritten," % key)
+                print ("   since '_objDoStore' was not found. "
+                       "Ignoring attribute. ")
             else:
                 if attr is not None and attr._objDoStore:
                     yield (key, attr)
-            
+
     def isPointer(self):
         """If this is true, the value field is a pointer 
         to another object"""
@@ -758,7 +760,6 @@ class Pointer(Object):
         ext = ext.replace(self.EXTENDED_ITEMID, '')
         return ext
         
-
     def hasValue(self):
         return self._objValue is not None
     
@@ -786,7 +787,7 @@ class Pointer(Object):
         return value
     
     def set(self, other):
-        """ Set the pointer value but cleanning the extendend property. """
+        """ Set the pointer value but cleaning the extended property. """
         Object.set(self, other)
         # This check is needed because set is call from the Object constructor
         # when this attribute is not setup yet (a dirty patch, I know)
@@ -1042,10 +1043,12 @@ class Set(OrderedObject):
         """ element in Set """
         return self._getMapper().selectById(itemId) != None
 
-    def iterItems(self, orderBy='id', direction='ASC', where='1'):
+    def iterItems(self, orderBy='id', direction='ASC', where='1',
+                  limit=None):
         return self._getMapper().selectAll(orderBy=orderBy,
                                            direction=direction,
-                                           where=where)#has flat mapper, iterate is true
+                                           where=where,
+                                           limit=limit)#has flat mapper, iterate is true
 
     def getFirstItem(self):
         """ Return the first item in the Set. """
@@ -1234,7 +1237,7 @@ class Set(OrderedObject):
     def enableAppend(self):
         """ By default, when a Set is loaded, it is opened
         in read-only mode, so no new insertions are allowed.
-        This function will allow to apppend more items
+        This function will allow to append more items
         to an existing set.
         """
         self._getMapper().enableAppend()

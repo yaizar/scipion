@@ -1,6 +1,6 @@
 # **************************************************************************
 # *
-# * Authors:     Josue Gomez Blanco (jgomez@cnb.csic.es)
+# * Authors:     Josue Gomez Blanco (josue.gomez-blanco@mcgill.ca)
 # *
 # * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
 # *
@@ -206,7 +206,11 @@ def readCtfModel(ctfModel, filename, ctf4=False):
             ctfModel.setStandardDefocus(defocusU, defocusV, defocusAngle)
         ctfModel.setFitQuality(ctfFit)
         ctfModel.setResolution(ctfResolution)
-        ctfModel._ctffind4_ctfPhaseShift = Float(ctfPhaseShift)
+
+        # Avoid creation of phaseShift
+        ctfPhaseShiftDeg = rad2deg(ctfPhaseShift)
+        if ctfPhaseShiftDeg != 0:
+            ctfModel.setPhaseShift(ctfPhaseShiftDeg)
 
 
 def geometryFromMatrix(matrix, inverseTransform=True):

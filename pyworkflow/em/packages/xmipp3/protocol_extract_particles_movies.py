@@ -1,6 +1,6 @@
 # *****************************************************************************
 # *
-# * Authors:     Josue Gomez Blanco (jgomez@cnb.csic.es)
+# * Authors:     Josue Gomez Blanco (josue.gomez-blanco@mcgill.ca)
 # *              J.M. De la Rosa Trevin (jmdelarosa@cnb.csic.es)
 # *
 # *
@@ -35,7 +35,7 @@ from pyworkflow.em import SetOfCoordinates
 from pyworkflow.em.packages.xmipp3.convert import (readSetOfMovieParticles,
                                                    xmippToLocation)
 from pyworkflow.em.convert import ImageHandler
-from pyworkflow.em.protocol import ProtExtractMovieParticles
+from pyworkflow.em.protocol import ProtExtractMovieParticles, ProtProcessMovies
 from pyworkflow.protocol.constants import LEVEL_ADVANCED, STEPS_PARALLEL
 from pyworkflow.protocol.params import (PointerParam, IntParam, BooleanParam,
                                         Positive, FloatParam, EnumParam)
@@ -71,13 +71,13 @@ class XmippProtExtractMovieParticles(ProtExtractMovieParticles):
 
     #--------------------------- DEFINE param functions ------------------------
     def _defineParams(self, form):
-        ProtExtractMovieParticles._defineParams(self, form)
+        ProtProcessMovies._defineParams(self, form)
         form.addParam('inputCoordinates', PointerParam,
                       pointerClass='SetOfCoordinates',
                       important=True,
                       label='Input coordinates')
         form.addParam('boxSize', IntParam, default=0,
-                      label='Particle box size', validators=[Positive],
+                      label='Particle box size (px)', validators=[Positive],
                       help='In pixels. The box size is the size of the boxed '
                            'particles, actual particles may be smaller than '
                            'this.')
@@ -150,7 +150,7 @@ class XmippProtExtractMovieParticles(ProtExtractMovieParticles):
                            'Ramp (subtract background+NewXmipp).')
         form.addParam('backRadius', IntParam, default=-1,
                       condition='doNormalize',
-                      label='Background radius',
+                      label='Background radius (px)',
                       help='Pixels outside this circle are assumed to be '
                            'noise and their stddev is set to 1. Radius for '
                            'background circle definition (in pix.). If this '
@@ -170,15 +170,16 @@ class XmippProtExtractMovieParticles(ProtExtractMovieParticles):
         # Conversion step is part of processMovieStep.
         movieSteps = self._insertNewMoviesSteps(self.insertedDict,
                                                 self.inputMovies.get())
-        finalSteps = self._insertFinalSteps(movieSteps)
+        # Do not use the extract particles finalStep method: wait = true.
+        # finalSteps = self._insertFinalSteps(movieSteps)
         self._insertFunctionStep('createOutputStep',
-                                 prerequisites=finalSteps, wait=False)
+                                 prerequisites=movieSteps, wait=False)
 
     def _insertMovieStep(self, movie):
         # Redefine this function to add the shifts and factor to the
         # processMovieStep function and run properly in parallel with threads
 
-        # retrive shifts here so there is no conflict
+        # retrieve shifts here so there is no conflict
         # if the object is accessed inside at the same time by multiple threads
         movieDict = movie.getObjDict(includeBasic=True)
         movieStepId = self._insertFunctionStep('processMovieStep',
@@ -187,8 +188,8 @@ class XmippProtExtractMovieParticles(ProtExtractMovieParticles):
                                                prerequisites=[])
         
         return movieStepId 
-    
-    #--------------------------- STEPS functions -------------------------------
+
+    # -------------------------- STEPS functions -------------------------------
     def _processMovie(self, movie):
         movId = movie.getObjId()
         x, y, n = movie.getDim()
@@ -346,6 +347,10 @@ class XmippProtExtractMovieParticles(ProtExtractMovieParticles):
     # --------------------------- INFO functions -------------------------------
     def _validate(self):
         errors = []
+        
+        if self.doNormalize and self.backRadius > self.boxSize.get() / 2:
+            errors.append("Background radius for normalization should "
+                          "be equal or less than the box size.")
         
         inputSet = self.inputMovies.get()
         

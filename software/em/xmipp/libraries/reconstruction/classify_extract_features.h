@@ -41,11 +41,17 @@ public:
     /**  Parameter for turning off denoising */
     bool noDenoising;
 
+    /**  Parameter for using entropy features */
+    bool useEntropy;
+
+    /**  Parameter for using entropy features */
+    bool useGranulo;
+
     /**  Parameter for using LBP */
     bool useLBP;
 
-    /**  Parameter for using entropy features */
-    bool useEntropy;
+    /** Parameter for ramp */
+    bool useRamp;
 
     /**  Parameter for using variance features */
     bool useVariance;
@@ -54,6 +60,9 @@ public:
     bool useZernike;
 
 public:
+    ProgExtractFeatures();
+    ~ProgExtractFeatures();
+
     /// Read argument
     void readParams();
 
@@ -66,6 +75,12 @@ public:
     /// Function for returning factorial up to n=4
     int facs(int n);
 
+    /// Extracting entropy features
+    void extractEntropy(const MultidimArray<double> &I, MultidimArray<double> &Imasked, std::vector<double> &fv);
+
+    /// Extracting granulometry features
+    void extractGranulo(const MultidimArray<double> &I, std::vector<double> &fv);
+
     /// Extracting LBP features
     /// See method at Ojala, Timo, Matti Pietikainen, and Topi Maenpaa.
     /// "Multiresolution gray-scale and rotation invariant texture
@@ -73,8 +88,8 @@ public:
     /// Pattern Analysis and Machine Intelligence 24.7 (2002): 971-987.
     void extractLBP(const MultidimArray<double> &I, std::vector<double> &fv);
 
-    /// Extracting entropy features
-    void extractEntropy(const MultidimArray<double> &I, MultidimArray<double> &Imasked, std::vector<double> &fv);
+    /// Gray ramp coefficients
+    void extractRamp(const MultidimArray<double> &I, std::vector<double> &fv);
 
     /// Extracting variance features
     void extractVariance(const MultidimArray<double> &I, std::vector<double> &fv);
@@ -95,5 +110,9 @@ public:
 public:
     /**  Masks for entropy features */
     MultidimArray<int> masks[7];
+
+    MultidimArray<int> rampMask;
+    FitPoint *fitPoints;
+    int NmaskPoints;
 };
 #endif

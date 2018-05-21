@@ -1281,8 +1281,8 @@ class FormWindow(Window):
         else:
             t = '  Protocol: %s' % (self.protocol.getClassLabel())
 
-        logoPath = getattr(package, '_logo', '')
-        
+        logoPath = self.protocol.getPluginLogoPath() or getattr(package, '_logo', '')
+
         if logoPath:
             headerLabel = tk.Label(headerFrame, text=t, font=self.fontBig, 
                                    image=self.getImage(logoPath, maxheight=40),

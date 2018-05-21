@@ -1,6 +1,6 @@
 # **************************************************************************
 # *
-# * Authors:     J.M. De la Rosa Trevin (jmdelarosa@cnb.csic.es)
+# * Authors:     Yaiza Rancel (cyrancel@cnb.csic.es)
 # *
 # * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
 # *
@@ -24,32 +24,35 @@
 # *
 # **************************************************************************
 """
-This package contains the protocols and data for EMAN2
+This modules handles Plugin management
 """
 
-from bibtex import _bibtex # Load bibtex dict with references
+import os
+from pyworkflow.utils import Environ
 
-_logo = "eman2_logo.png"
-_references = ['Tang2007']
-EMAN_DIR_VAR = 'EMAN2DIR'
+class Plugin(object):
 
-from eman2 import *
-from protocol_boxing import EmanProtBoxing
-from protocol_initialmodel import EmanProtInitModel
-from protocol_reconstruct import EmanProtReconstruct
-from protocol_refineasy import EmanProtRefine
-from protocol_autopick import SparxGaussianProtPicking
-from viewer import EmanViewer, RefineEasyViewer
-from wizard import SparxGaussianPickerWizard
-_environ = getEnviron()
+    def __init__(self, name, version=None, configVars=None,
+                 logo=None, bibtex=None):
+        # Plugin name - only mandatory attribute
+        self.name = name
+        # Plugin version
+        self.version = version
+        # dict with default values for env vars needed
+        self.configVars = configVars
+        # path to the logo, relative to each plugin's plugin.py file
+        self.logo = logo
+        # List with the default plugin references e.g. []
+        self.bibtex = bibtex
+        # Set default env vars
+        self.setDefaultEnviron()
 
-def validateInstallation():
-    """ This function will be used to check if package is properly installed."""
-    missingPaths = ["%s: %s" % (var, _environ[var])
-                    for var in [EMAN_DIR_VAR]
-                    if not os.path.exists(_environ[var])]
+    def setDefaultEnviron(self):
+        for k in self.configVars:
+            os.environ.setdefault(k, self.configVars[k])
+        environ = Environ(os.environ)
+        return environ
 
-    if missingPaths:
-        return ["Missing variables:"] + missingPaths
-    else:
-        return [] # No errors
+    def registerPluginBinaries(self, env):
+        """Overwrite in subclass"""
+        pass

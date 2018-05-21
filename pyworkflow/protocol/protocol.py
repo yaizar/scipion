@@ -1438,9 +1438,27 @@ class Protocol(Step):
         return getattr(cls, '_package', scipion)
 
     @classmethod
+    def getClassPlugin(cls):
+        package = cls.getClassPackage()
+        return getattr(package, '_plugin', None)
+
+    @classmethod
     def getClassPackageName(cls):
         return cls.getClassPackage().__name__.replace(
             'pyworkflow.protocol.scipion', 'scipion')
+
+    @classmethod
+    def getPluginLogoPath(cls):
+        package = cls.getClassPackage()
+        plugin = cls.getClassPlugin()
+        logo = plugin.logo if plugin else getattr(package, '_logo', None)
+        if logo:
+            logoPath = (pw.findResource(logo) or
+                        os.path.join(os.path.abspath(os.path.dirname(package.__file__)), logo))
+        else:
+            logoPath = None
+
+        return logoPath
 
     @classmethod
     def validatePackageVersion(cls, varName, errors):
@@ -1719,12 +1737,12 @@ class Protocol(Step):
         """ Should be implemented in subclasses. See citations. """
         return getattr(self, "_references", [])
 
-    def __getPackageBibTex(self):
-        """ Return the _bibtex from the package . """
-        return getattr(self.getClassPackage(), "_bibtex", {})
+    def __getPluginBibTex(self):
+        """ Return the _bibtex from the package """
+        return getattr(self.getClassPlugin(), 'bibtex', {}) or getattr(self.getClassPackage(), "_bibtex", {})
 
     def _getCite(self, citeStr):
-        bibtex = self.__getPackageBibTex()
+        bibtex = self.__getPluginBibTex()
         if citeStr in bibtex:
             text = self._getCiteText(bibtex[citeStr])
         else:
@@ -1756,7 +1774,7 @@ class Protocol(Step):
         """ From the list of citations keys, obtains the full
         info from the package _bibtex dict. 
         """
-        bibtex = self.__getPackageBibTex()
+        bibtex = self.__getPluginBibTex()
         newCitations = []
         for c in citations:
             if c in bibtex:
@@ -1767,7 +1785,7 @@ class Protocol(Step):
 
     def __getCitationsDict(self, citationList, bibTexOutput=False):
         """ Return a dictionary with Cite keys and the citation links. """
-        bibtex = self.__getPackageBibTex()
+        bibtex = self.__getPluginBibTex()
         od = OrderedDict()
         for c in citationList:
             if c in bibtex:
@@ -1810,7 +1828,7 @@ class Protocol(Step):
         """ Get the _methods results and parse possible cites. """
         try:
             baseMethods = self._methods() or []
-            bibtex = self.__getPackageBibTex()
+            bibtex = self.__getPluginBibTex()
             parsedMethods = []
             for m in baseMethods:
                 for bibId, cite in bibtex.iteritems():

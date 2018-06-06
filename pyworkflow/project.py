@@ -814,18 +814,17 @@ class Project(object):
 
         return result
 
-    def getProtocolsJson(self, protocols=None, namesOnly=False, copySrcDataDir=None):
+    def getProtocolDicts(self, protocols=None, namesOnly=False, copySrcDataDir=None):
         """ Create a Json string with the information of the given protocols.
-         Params:
-            protocols: list of protocols or None to include all.
-            namesOnly: the output list will contain only the protocol names.
-        """
+                 Params:
+                    protocols: list of protocols or None to include all.
+                    namesOnly: the output list will contain only the protocol names.
+                """
         protocols = protocols or self.getRuns()
 
         # If the nameOnly, we will simply return a json list with their names
         if namesOnly:
             return json.dumps([prot.getClassName() for prot in protocols])
-
 
         # Handle the copy of a list of protocols
         # for this case we need to update the references of input/outputs
@@ -856,8 +855,12 @@ class Project(object):
                                                inputAttr]
                         else:
                             childDict[iKey] = '%s.%s' % (
-                            protId, oKey)  # equivalent to pointer.getUniqueId
+                                protId, oKey)  # equivalent to pointer.getUniqueId
+        return newDict
 
+
+    def getProtocolsJson(self, protocols=None, namesOnly=False, copySrcDataDir=None):
+        newDict = self.getProtocolDicts(protocols=None, namesOnly=False, copySrcDataDir=None)
         return json.dumps(list(newDict.values()),
                           indent=4, separators=(',', ': '))
 
@@ -873,6 +876,7 @@ class Project(object):
         f = open(filename, 'w')
         f.write(jsonStr)
         f.close()
+        return jsonStr
 
     def loadProtocols(self, filename=None):
         """ Load protocols generated in the same format as self.exportProtocols.

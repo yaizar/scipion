@@ -29,7 +29,7 @@ import sys
 import os
 import re
 
-from os.path import basename, exists, isdir
+from os.path import exists, isdir
 import time
 from datetime import timedelta, datetime
 
@@ -38,7 +38,6 @@ from pyworkflow.utils.properties import Message
 import pyworkflow.protocol.params as params
 from pyworkflow.em.convert import ImageHandler
 from pyworkflow.em.data import Acquisition
-from shutil import copytree
 
 from base import ProtImportFiles
 
@@ -555,7 +554,6 @@ class ProtImportImages(ProtImportFiles):
             dstDir = os.path.join(exportDir, dstFolder)
             protDict['sourceDataDir'] = dstFolder
             protDict['filesPath'] = './%s' % dstFolder
-            copytree(extraFolder, dstDir)
 
         return protDict
 
@@ -573,7 +571,6 @@ class ProtImportImages(ProtImportFiles):
         if importDict['filesPath'].startswith('./'):
             folder = importDict['filesPath'].split('/', 1)[1]
             importDict['filesPath'] = os.path.join(importDir, folder)
-            importDict['filesPattern'] = '*'
 
         return importDict
 

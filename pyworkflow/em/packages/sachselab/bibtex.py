@@ -1,6 +1,6 @@
 # **************************************************************************
 # *
-# * Authors:     Airen
+# * Authors:     David Maluenda (dmaluenda@cnb.csic.es)
 # *
 # * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
 # *
@@ -24,26 +24,26 @@
 # *
 # **************************************************************************
 
-import os
+_bibtexStr = """
 
-from pyworkflow.utils import environAdd, Environ
+@Article{Jakobi2017,
+  Title                    = {Model-based local density sharpening of cryo-EM maps},
+  Author                   = {Jakobi, Arjen J and Wilmanns, Matthias and Sachse, Carsten},
+  Journal                  = {eLife},
+  Year                     = {2017},
+  Month                    = {October},
+  Volume                   = {6},
+  Doi                      = {http://doi.org/10.7554/eLife.27131},
+  Url                      = {http://elifesciences.org/articles/27131},
+  Citation                 = {eLife 2017;6:e27131},
+  Issn                     = {2050-084X},
+  Publisher                = {eLife Sciences Publications, Ltd}
+}
+
+"""
+
+from pyworkflow.utils import parseBibTex
+
+_bibtex = parseBibTex(_bibtexStr)  
 
 
-
-def loadEnvironment():
-    BSOFT_HOME = os.environ['BSOFT_HOME']
-    BSOFT_BIN = os.path.join(BSOFT_HOME, 'bin')
-    environAdd('PATH', BSOFT_BIN)
-    os.environ['BSOFT'] = BSOFT_HOME
-
-
-def getEnviron(xmippFirst=True):
-    """ Create the needed environment for Bsoft programs. """
-    environ = Environ(os.environ)
-    pos = Environ.BEGIN if xmippFirst else Environ.END
-    environ.update({
-            'PATH': os.path.join(os.environ['BSOFT_HOME'], 'bin'),
-            #'LD_LIBRARY_PATH': join(os.environ['BSOFT_HOME'], 'lib')
-            }, position=pos)
-    return environ
-    

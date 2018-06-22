@@ -1,4 +1,3 @@
-# coding: latin-1
 # **************************************************************************
 # *
 # * Authors:     J.M. De la Rosa Trevin (jmdelarosa@cnb.csic.es)
@@ -25,27 +24,32 @@
 # *
 # **************************************************************************
 """
-Bibtex string file for Xmipp package.
+This package contains the protocols and data for EMAN2
 """
 
-_bibtexStr = """
-@article{Heymann2007,
-title = "Bsoft: Image processing and molecular modeling for electron microscopy ",
-journal = "Journal of Structural Biology ",
-volume = "157",
-number = "1",
-pages = "3 - 18",
-year = "2007",
-issn = "1047-8477",
-doi = "http://dx.doi.org/10.1016/j.jsb.2006.06.006",
-url = "http://www.sciencedirect.com/science/article/pii/S1047847706001997",
-author = "J. Bernard Heymann and David M. Belnap",
-keywords = "Single particle analysis Tomography",
-}
-"""
+from bibtex import _bibtex # Load bibtex dict with references
 
+_logo = "eman2_logo.png"
+_references = ['Tang2007']
+EMAN_DIR_VAR = 'EMAN2DIR'
 
+from eman2 import *
+from protocol_boxing import EmanProtBoxing
+from protocol_initialmodel import EmanProtInitModel
+from protocol_reconstruct import EmanProtReconstruct
+from protocol_refineasy import EmanProtRefine
+from protocol_autopick import SparxGaussianProtPicking
+from viewer import EmanViewer, RefineEasyViewer
+from wizard import SparxGaussianPickerWizard
+_environ = getEnviron()
 
-from pyworkflow.utils import parseBibTex
+def validateInstallation():
+    """ This function will be used to check if package is properly installed."""
+    missingPaths = ["%s: %s" % (var, _environ[var])
+                    for var in [EMAN_DIR_VAR]
+                    if not os.path.exists(_environ[var])]
 
-_bibtex = parseBibTex(_bibtexStr)  
+    if missingPaths:
+        return ["Missing variables:"] + missingPaths
+    else:
+        return [] # No errors

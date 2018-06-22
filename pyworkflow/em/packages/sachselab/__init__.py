@@ -1,6 +1,6 @@
 # **************************************************************************
 # *
-# * Authors:     J.M. De la Rosa Trevin (jmdelarosa@cnb.csic.es)
+# * Authors:     David Maluenda (dmaluenda@cnb.csic.es)
 # *
 # * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
 # *
@@ -24,39 +24,23 @@
 # *
 # **************************************************************************
 """
-This package contains the protocols and data for BSOFT
+This package contains the protocols and data for LocScale
 """
-import os
-
+from locscale import *
 from bibtex import _bibtex # Load bibtex dict with references
- 
-_logo = "bsoft_logo.png"
-_references = ['Heymann2007']
-BSOFT_HOME_VAR = 'BSOFT_HOME'
 
-from protocol_particle_pick import BsoftProtParticlePicking
-from protocol_bfilter import BsoftProtBfilter
-from protocol_blocres import BsoftProtBlocres
+_logo = "locscale_logo.jpg"
 
-from wizard import BsoftFilterParticlesWizard
-
-
-from convert import getEnviron, getVersion
-_environ = getEnviron()
-
-# Since bsoft is not installed by default,
-# remove for now the viewer
-from viewer import BsoftViewerBlocres
-#from viewer import BsoftViewer
+from protocol_locscale import ProtLocScale
 
 def validateInstallation():
-    """ This function will be used to check if package is properly installed. """
-    missingPaths = ["%s: %s" % (var, _environ[var])
-                    for var in [BSOFT_HOME_VAR]
-                    if not os.path.exists(_environ[var])]
+    """ This function will be used to check if package is properly installed."""
+    missingPaths = ["%s: %s" % (var, os.environ[var])
+                    for var in [LOCSCALE_HOME_VAR, EMAN2DIR_VAR]
+                    if not os.path.exists(os.environ[var])]
 
     if missingPaths:
-        return ["Missing variables:"] + missingPaths
+        return ["Required software not found in the system:"] + missingPaths + \
+               ["Try to install the package following: scipion install --help"]
     else:
         return [] # No errors
-
